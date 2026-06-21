@@ -1,0 +1,4 @@
+p,trials,max_attempts,before_success_rate,after_success_rate,after_attempts_mean,theory_after
+0.1,20000,3,0.904,0.9991,1.106,0.999
+0.3,20000,3,0.7031,0.9739,1.389,0.973
+0.5,20000,3,0.5038,0.8762,1.751,0.875

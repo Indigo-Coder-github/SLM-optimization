@@ -1,0 +1,5 @@
+decorator,per_call_ns,overhead_ns,n_calls
+baseline,29.0,0.0,2000000
+@timed,188.5,159.5,2000000
+@logged+@timed,1361.8,1332.8,2000000
+@validate_path,159.4,130.4,2000000

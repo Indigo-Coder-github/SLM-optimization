@@ -1,0 +1,14 @@
+# 벤치마크 재현에 필요한 패키지 (GPU/torch/vllm 불필요)
+pandas>=2.0
+matplotlib>=3.7
+# 표준 라이브러리만 사용: csv, json, re, dataclasses, collections, itertools,
+# functools, statistics, tracemalloc, time, hashlib, random, tempfile
+
+# --- (선택) P/E 코어 affinity 측정용: benchmark/bench_pe_compare.py ---
+# psutil>=5.9          # CPU affinity 고정에 사용
+
+# --- (선택) 실제 GPU 모델 실증용: benchmark/verify_gpu.py ---
+# CUDA GPU 가 있을 때만 필요하며, 핵심 벤치마크/보고서 재현에는 불필요하다.
+# torch>=2.2          # CUDA 빌드 (예: cu126)
+# transformers>=4.50
+# accelerate>=0.30
