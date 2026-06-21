@@ -10,8 +10,10 @@
   1. **데이터 전처리 파이프라인** — `src/before/data_pipeline/{data_saver.py, utils.py}` → `src/after/data_pipeline/`
   2. **vLLM 기반 Evaluator** — `src/before/evaluation/{evaluator_core.py, prompt_engineer.py}` → `src/after/evaluation/`
 
-> 실제 연구 데이터·내부 경로·GPU 의존성은 제거하고, 동일한 구조를 재현하는 **synthetic data** 와
-> 결정적 **FakeBackend** 로 측정한다(과제 4·6장 허용). 따라서 `torch`/`vllm` 없이 CPU 만으로 재현 가능하다.
+> 처리 성능은 데이터 내용이 아니라 입력 크기·스키마에 좌우되므로, 입력 크기 N 을 정밀히 바꾸고 결과를
+> 재현하도록 실제 벤치마크와 **동일 스키마의 synthetic data** 와 결정적 **FakeBackend** 로 측정한다.
+> 따라서 `torch`/`vllm` 없이 CPU 만으로 재현 가능하다. 합성이 실제 데이터를 대표하는지는
+> `bench_synth_vs_real.py`(실제 MedQA 와 비교)로 별도 검증한다.
 
 ## 디렉터리 구조
 
@@ -33,16 +35,17 @@ SLM-optimization/
 │  ├─ make_synthetic_responses.py     # evaluator용 요청 + FakeBackend
 │  ├─ run_benchmark_pipeline.py       # 전처리 before/after 측정
 │  ├─ run_benchmark_evaluator.py      # evaluator before/after 측정
+│  ├─ run_benchmark_micro.py          # 집계/반복본/재시도 미세 최적화 격리 측정
 │  ├─ bench_decorator_overhead.py     # 데코레이터 호출당 오버헤드 측정
+│  ├─ bench_synth_vs_real.py          # 합성 vs 실제 데이터(MedQA) 대표성 비교
 │  ├─ bench_pe_compare.py             # 실제 벤치마크를 P코어/E코어 고정 비교
 │  └─ verify_gpu.py                   # 실제 GPU 모델(Qwen3-0.6B) 실증
 ├─ tests/
 │  └─ test_equivalence.py             # before==after / wraps 보존 검증
-├─ results/
-│  ├─ pipeline_results.csv, evaluator_results.csv, decorator_overhead.csv
-│  └─ figures/*.png
-└─ report/
-   └─ report.pdf                      # 최종 보고서
+└─ results/
+   ├─ pipeline_results.csv, evaluator_results.csv, decorator_overhead.csv
+   ├─ micro_aggregate.csv, micro_repeat.csv, micro_retry.csv, synth_vs_real.csv
+   └─ figures/*.png
 ```
 
 동일 함수의 최적화 전/후 구현이 `before/` 와 `after/` **폴더에 나란히** 위치하므로, 두 디렉터리를
@@ -59,8 +62,10 @@ python tests/test_equivalence.py     # 4/4 통과
 # 2) 벤치마크 (CSV + 그래프 자동 생성, before/after 출력 동일성 검증 포함)
 python benchmark/run_benchmark_pipeline.py
 python benchmark/run_benchmark_evaluator.py
-python benchmark/bench_decorator_overhead.py   # 데코레이터 호출당 오버헤드(ns)
+python benchmark/run_benchmark_micro.py         # 집계/반복본/재시도 미세 최적화 격리
+python benchmark/bench_decorator_overhead.py    # 데코레이터 호출당 오버헤드(ns)
 python benchmark/bench_pe_compare.py            # 실제 벤치마크를 P코어/E코어 고정 비교(psutil 필요)
+python benchmark/bench_synth_vs_real.py         # 합성 vs 실제 데이터(MedQA) — datasets·인터넷 필요
 
 # 3) (선택) 실제 GPU 모델 실증 — CUDA GPU + torch/transformers 필요
 python benchmark/verify_gpu.py       # Qwen3-0.6B 를 GPU 에 올려 추론 + Evaluator E2E
@@ -87,7 +92,7 @@ transformers 로 시연하며, Linux/WSL 에서는 같은 Protocol 의 vLLMBacke
 | C 클래스·SRP | Reader/Transformer/Writer 분리, `ProcessorConfig`(frozen), `slots`/`frozen` dataclass, `Protocol` | God-method 분해, `GenerationBackend` Protocol(vLLM↔Fake 교체), `EvalConfig` |
 | D 데코레이터 | `@timed`/`@logged`/`@validate_path` | `@retry`(지수 백오프)/`@timed`/`@lru_cache` |
 
-자세한 진단·근거·결과 해석은 `report/report.pdf` 참조.
+자세한 진단·근거·결과 해석은 과제 제출물로 별도 제공하는 보고서 PDF 를 참조.
 
 ## 핵심 변경 (before → after)
 
@@ -150,5 +155,5 @@ evaluator = Evaluator(backend, EvalConfig(...))   # Fake ↔ vLLM ↔ Transforme
 
 ## 비고
 
-- 이 저장소는 현재 원격(GitHub)에 연결되어 있지 않다(로컬 전용). 점검 후 새 원격에 직접 푸시할 예정이다.
 - 원본 SLM 저장소의 전체 코드/데이터는 포함하지 않으며, 최적화 대상 모듈의 before/after 만 재현 형태로 담는다.
+- 보고서(PDF)는 과제 제출물로 별도 제공하며, 이 저장소에는 코드·벤치마크·결과만 포함한다.
