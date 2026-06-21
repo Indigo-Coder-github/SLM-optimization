@@ -10,10 +10,14 @@
   1. **데이터 전처리 파이프라인** — `src/before/data_pipeline/{data_saver.py, utils.py}` → `src/after/data_pipeline/`
   2. **vLLM 기반 Evaluator** — `src/before/evaluation/{evaluator_core.py, prompt_engineer.py}` → `src/after/evaluation/`
 
-> 처리 성능은 데이터 내용이 아니라 입력 크기·스키마에 좌우되므로, 입력 크기 N 을 정밀히 바꾸고 결과를
-> 재현하도록 실제 벤치마크와 **동일 스키마의 synthetic data** 와 결정적 **FakeBackend** 로 측정한다.
-> 따라서 `torch`/`vllm` 없이 CPU 만으로 재현 가능하다. 합성이 실제 데이터를 대표하는지는
-> `bench_synth_vs_real.py`(실제 MedQA 와 비교)로 별도 검증한다.
+> **측정 데이터 — 합성 + 실제 데이터 교차검증.** 스케일링 벤치마크(전처리·Evaluator)는 입력 크기 N 을
+> 정밀히 바꾸고 재현하려고 실제 벤치마크와 **동일 스키마의 synthetic data**·결정적 **FakeBackend** 로
+> 측정한다(`torch`/`vllm` 없이 CPU 재현 가능). 여기에 더해 **실제 데이터로도 직접 실험**한다:
+> - **실제 의료 벤치마크 MedQA-USMLE 10,178문항**으로 전처리 before/after 를 돌려 합성과 같은 결론과
+>   **출력 바이트 동일성(md5)** 을 확인한다 — `bench_synth_vs_real.py` → `results/synth_vs_real.csv`
+> - **실제 GPU 모델 Qwen3-0.6B** 로 재설계한 Evaluator 를 end-to-end 실행한다 — `verify_gpu.py`
+>
+> 즉 성능 측정은 합성으로 하되, 실제 데이터·실제 모델로 대표성과 정확성을 교차검증한 구조다.
 
 ## 디렉터리 구조
 
